@@ -1,0 +1,14 @@
+version: '3.3'
+services:
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--web.config.file=/etc/node_exporter/web.yml'
+    network_mode: host
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+      - ./web.yml:/etc/node_exporter/web.yml

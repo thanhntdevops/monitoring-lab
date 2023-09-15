@@ -1,0 +1,34 @@
+#route:
+#  group_by: ['alertname']
+#  group_wait: 30s
+#  group_interval: 5m
+#  repeat_interval: 1h
+#  receiver: 'web.hook'
+#receivers:
+#  - name: 'web.hook'
+#    webhook_configs:
+#      - url: 'http://127.0.0.1:5001/'
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
+
+route:
+  # The default receiver
+  receiver: 'telegram'
+  group_wait: 15s
+  group_interval: 1m
+  repeat_interval: 2m
+
+receivers:
+- name: 'telegram'
+  telegram_configs:
+  - bot_token: 'bot_token'
+    api_url: https://api.telegram.org
+    chat_id: chat_id
+    message: '{{ template "telegram.yucca.message" . }}'
+
+templates:
+- '/etc/alertmanager/templates/telegram.tmpl'

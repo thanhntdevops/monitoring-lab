@@ -1,0 +1,64 @@
+groups:
+- name: node
+  rules:
+  - alert: NodeDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      title: Node {{ $labels.instance }} is down
+      description: Failed to scrape {{ $labels.job }} on {{ $labels.instance }} for more than 1 minutes. Node seems down.
+  # Alert if any node has a CPU usage above 80% for more than 5 minutes
+  - alert: HighCPUUsage
+    expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has a CPU usage of {{ $value }}% for more than 5 minutes"
+
+  # Alert if any node has a RAM usage above 90% for more than 5 minutes
+  - alert: HighRAMUsage
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High RAM usage on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has a RAM usage of {{ $value }}% for more than 5 minutes"
+
+  # Alert if any node has a disk usage above 80% for more than 5 minutes
+  - alert: HighDiskUsage
+    expr: node_filesystem_avail_bytes / node_filesystem_size_bytes * 100 < 20
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High disk usage on {{ $labels.instance }} ({{ $labels.device }})"
+      description: "{{ $labels.instance }} has a disk usage of {{ $value }}% for more than 5 minutes on device {{ $labels.device }}"
+
+# Network
+- name: network
+  rules:
+  - record: node_network_receive_bytes_total_rate
+    expr: rate(node_network_receive_bytes_total[5m])
+  - record: node_network_transmit_bytes_total_rate
+    expr: rate(node_network_transmit_bytes_total[5m])
+  - alert: NetworkReceiveHigh
+    expr: node_network_receive_bytes_total_rate > 1000000
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High network receive rate (instance {{ $labels.instance }})"
+      description: "Network receive rate is above 1 MB/s for more than 10 minutes (current value: {{ $value }})"
+  - alert: NetworkTransmitHigh
+    expr: node_network_transmit_bytes_total_rate > 1000000
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High network transmit rate (instance {{ $labels.instance }})"
+      description: "Network transmit rate is above 1 MB/s for more than 10 minutes (current value: {{ $value }})"
