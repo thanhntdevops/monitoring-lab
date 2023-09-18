@@ -7,26 +7,29 @@ wget https://github.com/prometheus/node_exporter/releases/download/v$VERSION/nod
 tar xvfz node_exporter-*.*-amd64.tar.gz
 cd node_exporter-*.*-amd64
 mv node_exporter /usr/local/bin/
-read -p "username : " username
-read -sp "password : " password
-cat <<EOF > hashpw.py
-import getpass
-import bcrypt
-import sys
+# read -p "username : " username
+# read -sp "password : " password
+# cat <<EOF > hashpw.py
+# import getpass
+# import bcrypt
+# import sys
 
-username = sys.argv[1]
-password = sys.argv[2]
-hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-print(username +":"+ hashed_password.decode())
-EOF
-apt-get install python3-pip -y && pip3 install bcrypt
-basic_auth=`python3 hashpw.py $username $password`
+# username = sys.argv[1]
+# password = sys.argv[2]
+# hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+# print(username +": "+ hashed_password.decode())
+# EOF
+# apt-get update && apt-get install python3-pip -y && pip3 install bcrypt
+# basic_auth=`python3 hashpw.py $username $password`
 
-mkdir -p /etc/node_exporter
+if [[ -n $BASIC_AUTH ]];then
+    mkdir -p /etc/node_exporter
 cat << EOF > /etc/node_exporter/web-config.yml
 basic_auth_users:
-  $basic_auth
+  $BASIC_AUTH
 EOF
+    NODE_EXPORTER_ARGS="--web.config.file=/etc/node_exporter/web-config.yml"
+fi
 
 cat << EOF > /etc/systemd/system/node_exporter.service
 [Unit]
@@ -37,7 +40,7 @@ After=network.target
 User=nobody
 Group=nogroup
 Type=simple
-ExecStart=/usr/local/bin/node_exporter --web.config.file=/etc/node_exporter/web-config.yml
+ExecStart=/usr/local/bin/node_exporter $NODE_EXPORTER_ARGS
 Restart=always
 
 [Install]
